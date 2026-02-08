@@ -27,7 +27,10 @@
             font-family: 'Inter', sans-serif; 
             background-color: var(--bg-body); 
             color: var(--text-main); 
-            padding-bottom: 60px;
+            /* Fixed: Removed padding-bottom to remove white space under footer */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* --- Navbar (Glassmorphism) --- */
@@ -68,7 +71,8 @@
         .hero-slide { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; 
+            /* Fixed: Changed 'contain' to 'cover' so image fits width fully */
+            object-fit: cover; 
             position: absolute; 
             opacity: 0; 
             transition: opacity 1s ease-in-out; 
@@ -76,7 +80,12 @@
         .hero-slide.active { opacity: 1; }
 
         /* --- Layout & Grids --- */
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 15px; 
+            flex: 1; /* Pushes footer down */
+        }
         
         .section-title {
             font-size: 1.5rem;
@@ -86,12 +95,17 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            /* Fixed: Center align section names */
+            justify-content: center;
+            text-align: center;
         }
 
         .grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
             gap: 20px; 
+            /* Fixed: Center align product cards in the grid */
+            justify-content: center;
         }
 
         /* --- Cards --- */
@@ -152,6 +166,12 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             border: 1px solid #E5E7EB;
             margin-bottom: 15px;
+            
+            /* Fixed: Ensure long words break on 250px screens */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
         }
         .stars { color: #F59E0B; letter-spacing: 2px; }
 
@@ -173,13 +193,17 @@
             padding: 40px 20px; 
             background: #1F2937; 
             color: #9CA3AF; 
-            margin-top: 60px; 
+            margin-top: auto; /* Pushes to bottom */
         }
 
         /* --- Responsive 250px Fixes --- */
         @media (max-width: 400px) {
             .hero-section { height: 200px; }
-            .grid { grid-template-columns: 1fr; } /* 1 column on very small screens */
+            .grid { 
+                grid-template-columns: 1fr; /* 1 column on very small screens */
+                justify-items: center; /* Ensures cards are centered */
+            } 
+            .card { width: 100%; }
             .section-title { font-size: 1.25rem; }
             nav { padding: 10px; }
             .logo-img { width: 35px; height: 35px; }
@@ -316,7 +340,7 @@
                 heroDiv.innerHTML = '';
                 if(data.heroImages && data.heroImages.length > 0) {
                     data.heroImages.forEach((img, index) => {
-                        // Using background-size contain via CSS, or Object-fit via img tag
+                        // Using object-fit: cover via CSS now to fit width
                         heroDiv.innerHTML += `<img src="${img}" class="hero-slide ${index === 0 ? 'active' : ''}">`;
                     });
                     startSlider();
@@ -345,7 +369,7 @@
             container.innerHTML = '';
             
             if(products.length === 0) {
-                container.innerHTML = `<p style="color:#999; grid-column: 1/-1;">No products here yet.</p>`;
+                container.innerHTML = `<p style="color:#999; grid-column: 1/-1; text-align: center;">No products here yet.</p>`;
                 return;
             }
 
@@ -371,7 +395,7 @@
             const container = document.getElementById('reviewsContainer');
             container.innerHTML = '';
             if (snapshot.empty) {
-                container.innerHTML = '<p style="color:#999;">No reviews yet. Be the first!</p>';
+                container.innerHTML = '<p style="color:#999; text-align:center;">No reviews yet. Be the first!</p>';
                 return;
             }
             snapshot.forEach(doc => {
