@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Login Section -->
+    <div id="login-screen" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg);">
+        <div style="text-align: center;">
+            <h1>Admin Access</h1>
+            <button id="login-btn" class="btn">Login with Gmail</button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="admin-panel" class="admin-container hidden">
+        <div class="sidebar">
+            <h2>Dashboard</h2>
+            <button onclick="showTab('tab1')" class="active">Gen. Settings</button>
+            <button onclick="showTab('tab2')">Add Product</button>
+            <button onclick="showTab('tab3')">All Products</button>
+            <button onclick="showTab('tab4')">Reviews</button>
+            <button onclick="showTab('tab5')">Contact</button>
+            <button onclick="logout()" style="margin-top: 20px; color: #ff6b6b;">Logout</button>
+        </div>
+
+        <div class="content">
+            <!-- Tab 1: Settings -->
+            <div id="tab1" class="tab-content">
+                <h2>General Settings</h2>
+                <div class="form-group">
+                    <label>Website Name</label>
+                    <input type="text" id="webNameInput">
+                </div>
+                <div class="form-group">
+                    <label>Slogan</label>
+                    <input type="text" id="sloganInput">
+                </div>
+                <div class="form-group">
+                    <label>Logo</label>
+                    <input type="file" id="logoUpload">
+                    <button class="btn" onclick="uploadAsset('logo')">Update Logo</button>
+                </div>
+                <div class="form-group">
+                    <label>Favicon</label>
+                    <input type="file" id="faviconUpload">
+                    <button class="btn" onclick="uploadAsset('favicon')">Update Favicon</button>
+                </div>
+                <div class="form-group">
+                    <label>Hero Images (Upload 5)</label>
+                    <input type="file" id="heroUpload" multiple>
+                    <button class="btn" onclick="uploadHeroImages()">Upload Hero Images</button>
+                    <p id="heroStatus"></p>
+                </div>
+                <button class="btn btn-success" onclick="saveGeneralSettings()">Save Settings</button>
+            </div>
+
+            <!-- Tab 2: Add Product -->
+            <div id="tab2" class="tab-content hidden">
+                <h2>Add Product</h2>
+                <input type="text" id="prodName" placeholder="Product Name">
+                <input type="number" id="prodPrice" placeholder="Price">
+                <input type="text" id="prodLink" placeholder="Affiliate Link">
+                <input type="text" id="prodBtnLabel" placeholder="Button Label (e.g. Buy Now)">
+                <input type="file" id="prodImage">
+                <button class="btn btn-success" onclick="addProduct()">Publish Product</button>
+            </div>
+
+            <!-- Tab 3: All Products -->
+            <div id="tab3" class="tab-content hidden">
+                <h2>All Products</h2>
+                <div id="adminProductList" class="grid"></div>
+            </div>
+
+            <!-- Tab 4: Reviews -->
+            <div id="tab4" class="tab-content hidden">
+                <h2>Review Moderation</h2>
+                <div id="adminReviewList"></div>
+            </div>
+
+            <!-- Tab 5: Contact -->
+            <div id="tab5" class="tab-content hidden">
+                <h2>Contact Info</h2>
+                <input type="text" id="phoneInput" placeholder="Phone Number">
+                <button class="btn btn-success" onclick="saveContact()">Save Phone</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRyjpnt_eClLiBLav06wRO9njaBXOWvGU",
+            authDomain: "ecommlyai.firebaseapp.com",
+            projectId: "ecommlyai",
+            storageBucket: "ecommlyai.firebasestorage.app",
+            messagingSenderId: "96539662736",
+            appId: "1:96539662736:web:60dfc65784fc60c98bbb15",
+            measurementId: "G-FNRQ5Z6XQ5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // --- Auth Logic ---
+        const loginBtn = document.getElementById('login-btn');
+        loginBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).then(res => console.log("Logged in"));
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                loadAllData();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
+        });
+
+        window.logout = () => signOut(auth);
+
+        // --- UI Logic ---
+        window.showTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+        };
+
+        // --- Tab 1: Settings ---
+        async function loadAllData() {
+            // Load Settings
+            const docSnap = await getDoc(doc(db, "settings", "general"));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('webNameInput').value = data.websiteName || '';
+                document.getElementById('sloganInput').value = data.slogan || '';
+                document.getElementById('phoneInput').value = data.phone || '';
+            }
+
+            // Load Products
+            const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('adminProductList');
+                list.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    list.innerHTML += `
+                        <div class="card">
+                            <img src="${p.imageUrl}" alt="${p.name}">
+                            <h3>${p.name}</h3>
+                            <button class="btn" onclick="editProduct('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteProduct('${doc.id}')" style="margin-top:5px">Delete</button>
+                        </div>
+                    `;
+                });
+            });
+
+            // Load Reviews
+            onSnapshot(collection(db, "reviews"), (snapshot) => {
+                const list = document.getElementById('adminReviewList');
+                list.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const r = docSnap.data();
+                    const bg = r.status === 'approved' ? '#e8f5e9' : '#fff3e0';
+                    list.innerHTML += `
+                        <div class="review-card" style="background:${bg}">
+                            <strong>${r.name} (${r.stars} Stars)</strong>
+                            <p>${r.comment}</p>
+                            <small>Status: ${r.status}</small><br>
+                            ${r.status !== 'approved' ? `<button class="btn btn-success" onclick="approveReview('${docSnap.id}')">Publish</button>` : ''}
+                            <button class="btn btn-danger" onclick="deleteReview('${docSnap.id}')">Delete</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        window.uploadAsset = async (type) => {
+            const file = document.getElementById(type + 'Upload').files[0];
+            if (!file) return;
+            const storageRef = ref(storage, `assets/${type}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+            await setDoc(doc(db, "settings", "general"), { [type + 'Url']: url }, { merge: true });
+            alert(type + ' updated!');
+        };
+
+        window.uploadHeroImages = async () => {
+            const files = document.getElementById('heroUpload').files;
+            if (files.length > 5) return alert("Max 5 images");
+            let urls = [];
+            for (let i = 0; i < files.length; i++) {
+                const storageRef = ref(storage, `hero/hero_${i}`);
+                await uploadBytes(storageRef, files[i]);
+                const url = await getDownloadURL(storageRef);
+                urls.push(url);
+            }
+            await setDoc(doc(db, "settings", "general"), { heroImages: urls }, { merge: true });
+            alert("Hero images updated!");
+        };
+
+        window.saveGeneralSettings = async () => {
+            const name = document.getElementById('webNameInput').value;
+            const slogan = document.getElementById('sloganInput').value;
+            await setDoc(doc(db, "settings", "general"), { websiteName: name, slogan: slogan }, { merge: true });
+            alert("Saved!");
+        };
+
+        // --- Tab 2: Add Product ---
+        window.addProduct = async () => {
+            const file = document.getElementById('prodImage').files[0];
+            if(!file) return alert("Image required");
+            
+            const storageRef = ref(storage, `products/${Date.now()}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            await addDoc(collection(db, "products"), {
+                name: document.getElementById('prodName').value,
+                price: document.getElementById('prodPrice').value,
+                link: document.getElementById('prodLink').value,
+                buttonLabel: document.getElementById('prodBtnLabel').value,
+                imageUrl: url,
+                createdAt: Date.now()
+            });
+            alert("Product Published!");
+        };
+
+        // --- Tab 3: Products Logic (Edit/Delete) ---
+        window.deleteProduct = async (id) => {
+            if(confirm("Delete this product?")) await deleteDoc(doc(db, "products", id));
+        };
+        // Simplified Edit: Prompts for new price/name for brevity
+        window.editProduct = async (id) => {
+            const newName = prompt("New Name:");
+            if(newName) await updateDoc(doc(db, "products", id), { name: newName });
+        };
+
+        // --- Tab 4: Reviews ---
+        window.approveReview = async (id) => {
+            await updateDoc(doc(db, "reviews", id), { status: 'approved' });
+        };
+        window.deleteReview = async (id) => {
+            await deleteDoc(doc(db, "reviews", id));
+        };
+
+        // --- Tab 5: Contact ---
+        window.saveContact = async () => {
+            const phone = document.getElementById('phoneInput').value;
+            await setDoc(doc(db, "settings", "general"), { phone: phone }, { merge: true });
+            alert("Phone Updated");
+        };
+    </script>
+</body>
+</html>

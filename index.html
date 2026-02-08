@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link id="favicon-link" rel="icon" type="image/png" href="">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav>
+        <img id="navLogo" class="logo-img" src="" alt="Logo">
+        <h2 id="navWebName">Loading...</h2>
+    </nav>
+
+    <!-- Header / Slogan -->
+    <div style="text-align: center; padding: 10px; background: white;">
+        <p id="navSlogan" style="color: #666; font-style: italic;"></p>
+    </div>
+
+    <!-- Hero Section -->
+    <div id="hero" class="hero-section">
+        <!-- Images injected here -->
+    </div>
+
+    <div class="content" style="max-width: 1200px; margin: 0 auto;">
+        
+        <!-- New Arrivals -->
+        <h2 style="margin: 20px 0;">✨ New Arrivals</h2>
+        <div id="newArrivals" class="grid"></div>
+
+        <!-- Best Sellers -->
+        <h2 style="margin: 20px 0;">🔥 Best Sellers</h2>
+        <div id="bestSellers" class="grid"></div>
+
+        <!-- Reviews -->
+        <h2 style="margin: 20px 0;">⭐ Reviews</h2>
+        <div id="reviewsContainer" class="grid" style="grid-template-columns: 1fr;"></div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <h3>Write a Review</h3>
+            <input type="text" id="revName" placeholder="Your Name">
+            <textarea id="revComment" placeholder="Your Experience"></textarea>
+            <select id="revStars" style="width:100%; padding:10px; margin:5px 0;">
+                <option value="5">⭐⭐⭐⭐⭐</option>
+                <option value="4">⭐⭐⭐⭐</option>
+                <option value="3">⭐⭐⭐</option>
+            </select>
+            <button class="btn" onclick="submitReview()">Submit Review</button>
+        </div>
+
+        <!-- Contact Us -->
+        <h2 style="margin: 20px 0;">📞 Contact Us</h2>
+        <div class="card" style="text-align: center; padding: 20px;">
+            <p style="font-size: 1.5rem; color: var(--primary);" id="contactPhone"></p>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 <span id="footerName"></span></p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, collection, addDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRyjpnt_eClLiBLav06wRO9njaBXOWvGU",
+            authDomain: "ecommlyai.firebaseapp.com",
+            projectId: "ecommlyai",
+            storageBucket: "ecommlyai.firebasestorage.app",
+            messagingSenderId: "96539662736",
+            appId: "1:96539662736:web:60dfc65784fc60c98bbb15",
+            measurementId: "G-FNRQ5Z6XQ5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+
+        // --- Realtime Data Fetching ---
+
+        // 1. Settings (Logo, Names, Hero, Phone)
+        onSnapshot(doc(db, "settings", "general"), (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                document.getElementById('navWebName').innerText = data.websiteName || 'My Shop';
+                document.getElementById('footerName').innerText = data.websiteName || 'My Shop';
+                document.getElementById('navSlogan').innerText = data.slogan || '';
+                document.getElementById('contactPhone').innerText = data.phone || 'No phone listed';
+                
+                if(data.logoUrl) document.getElementById('navLogo').src = data.logoUrl;
+                if(data.faviconUrl) document.getElementById('favicon-link').href = data.faviconUrl;
+
+                // Hero Slider
+                const heroDiv = document.getElementById('hero');
+                heroDiv.innerHTML = '';
+                if(data.heroImages && data.heroImages.length > 0) {
+                    data.heroImages.forEach((img, index) => {
+                        heroDiv.innerHTML += `<img src="${img}" class="hero-slide ${index === 0 ? 'active' : ''}">`;
+                    });
+                    startSlider();
+                }
+            }
+        });
+
+        // 2. Products (Split Logic)
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const allProducts = [];
+            snapshot.forEach(doc => allProducts.push(doc.data()));
+
+            const newArrivals = allProducts.slice(0, 4); // First 4
+            const bestSellers = allProducts.slice(4);    // The rest
+
+            renderProducts('newArrivals', newArrivals);
+            renderProducts('bestSellers', bestSellers);
+        });
+
+        function renderProducts(elementId, products) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            products.forEach(p => {
+                container.innerHTML += `
+                    <div class="card">
+                        <img src="${p.imageUrl}" alt="${p.name}">
+                        <div style="padding:10px;">
+                            <h3>${p.name}</h3>
+                            <p class="price">$${p.price}</p>
+                            <button class="btn" style="width:100%; margin-top:10px;" onclick="window.open('${p.link}', '_blank')">
+                                ${p.buttonLabel}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. Reviews (Only Approved)
+        const rQ = query(collection(db, "reviews"), where("status", "==", "approved"));
+        onSnapshot(rQ, (snapshot) => {
+            const container = document.getElementById('reviewsContainer');
+            container.innerHTML = '';
+            snapshot.forEach(doc => {
+                const r = doc.data();
+                const stars = "⭐".repeat(r.stars);
+                container.innerHTML += `
+                    <div class="review-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong>${r.name}</strong>
+                            <span class="stars">${stars}</span>
+                        </div>
+                        <p style="margin-top:5px; color:#555;">"${r.comment}"</p>
+                    </div>
+                `;
+            });
+        });
+
+        // --- Logic ---
+        
+        let slideIndex = 0;
+        function startSlider() {
+            const slides = document.querySelectorAll('.hero-slide');
+            if(slides.length === 0) return;
+            setInterval(() => {
+                slides[slideIndex].classList.remove('active');
+                slideIndex = (slideIndex + 1) % slides.length;
+                slides[slideIndex].classList.add('active');
+            }, 3000); // 3 seconds
+        }
+
+        window.submitReview = async () => {
+            const name = document.getElementById('revName').value;
+            const comment = document.getElementById('revComment').value;
+            const stars = document.getElementById('revStars').value;
+
+            if(!name || !comment) return alert("Please fill all fields");
+
+            await addDoc(collection(db, "reviews"), {
+                name, comment, stars: parseInt(stars), status: 'pending', createdAt: Date.now()
+            });
+            alert("Review submitted for approval!");
+            document.getElementById('revName').value = '';
+            document.getElementById('revComment').value = '';
+        };
+    </script>
+</body>
+</html>
