@@ -4,75 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for that clean SaaS look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- SILICON VALLEY AESTHETIC (Internal Styles to guarantee the look) --- */
+        :root {
+            --primary: #4F46E5; /* Indigo-600 */
+            --primary-hover: #4338ca;
+            --bg-body: #F3F4F6; /* Cool Gray */
+            --bg-card: #FFFFFF;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --danger: #EF4444;
+            --success: #10B981;
+            --radius: 8px;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        }
+
+        /* Layout */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1F2937; /* Dark Slate */
+            color: white;
+            padding: 20px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            color: #F9FAFB;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+        }
+
+        .sidebar button {
+            background: transparent;
+            border: none;
+            color: #9CA3AF;
+            padding: 12px 15px;
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+            border-radius: var(--radius);
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+        }
+
+        .sidebar button:hover {
+            background: #374151;
+            color: white;
+        }
+
+        .sidebar button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        /* Cards & Forms */
+        .tab-content h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"], input[type="number"], input[type="file"], select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box; /* Important fix */
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            ring: 2px solid var(--primary);
+        }
+
+        /* Style Controls Row */
+        .style-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .style-controls select, .style-controls input {
+            flex: 1;
+        }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn:active { transform: scale(0.98); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); font-size: 0.8rem; padding: 6px 12px;}
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+
+        /* Image Previews */
+        .preview-container {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 60px;
+        }
+        .preview-img {
+            height: 60px;
+            width: auto;
+            border-radius: 4px;
+            box-shadow: var(--shadow);
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .hero-item {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .hero-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+        }
+        .delete-overlay {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--danger);
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); display:flex; flex-direction:column; }
+        .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+        .review-card { padding: 15px; margin-bottom: 10px; border-radius: var(--radius); border: 1px solid var(--border); }
+
+        @media (max-width: 768px) {
+            .admin-container { flex-direction: column; }
+            .sidebar { width: 100%; padding: 10px; }
+            .content { padding: 15px; }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- Login Section -->
-    <div id="login-screen" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg);">
-        <div style="text-align: center;">
-            <h1>Admin Access</h1>
-            <button id="login-btn" class="btn">Login with Gmail</button>
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%;">
+            <h1 style="margin-bottom: 10px; color: var(--text-main);">Admin Portal</h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Manage your PWA securely.</p>
+            <button id="login-btn" class="btn" style="width: 100%;">Login with Gmail</button>
         </div>
     </div>
 
-    <!-- Admin Dashboard -->
+    <!-- Admin Panel -->
     <div id="admin-panel" class="admin-container hidden">
         <div class="sidebar">
-            <h2>Dashboard</h2>
-            <button onclick="showTab('tab1')" class="active">Gen. Settings</button>
-            <button onclick="showTab('tab2')">Add Product</button>
-            <button onclick="showTab('tab3')">All Products</button>
-            <button onclick="showTab('tab4')">Reviews</button>
-            <button onclick="showTab('tab5')">Contact</button>
-            <button onclick="logout()" style="margin-top: 20px; color: #ff6b6b;">Logout</button>
+            <h2>🛍️ E-Comm Admin</h2>
+            <button onclick="showTab('tab1')" class="active">⚙️ General Settings</button>
+            <button onclick="showTab('tab2')">➕ Add Product</button>
+            <button onclick="showTab('tab3')">📦 All Products</button>
+            <button onclick="showTab('tab4')">⭐ Reviews</button>
+            <button onclick="showTab('tab5')">📞 Contact Info</button>
+            <button onclick="logout()" style="margin-top: auto; color: #ff6b6b; border: 1px solid #ff6b6b;">Log Out</button>
         </div>
 
         <div class="content">
-            <!-- Tab 1: Settings -->
+            
+            <!-- Tab 1: General Settings -->
             <div id="tab1" class="tab-content">
                 <h2>General Settings</h2>
-                <div class="form-group">
-                    <label>Website Name</label>
-                    <input type="text" id="webNameInput">
+                
+                <!-- Website Name Configuration -->
+                <div class="section-card">
+                    <label>1. Website Name Configuration</label>
+                    <input type="text" id="webNameInput" placeholder="Enter Website Name (e.g. MyStore)">
+                    <div class="style-controls">
+                        <select id="webNameFont">
+                            <option value="Poppins, sans-serif">Poppins</option>
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="'Courier New', monospace">Courier</option>
+                            <option value="serif">Serif</option>
+                        </select>
+                        <input type="number" id="webNameSize" placeholder="Size (px)" value="24">
+                        <input type="color" id="webNameColor" value="#000000" style="height: 42px; padding: 2px;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Slogan</label>
-                    <input type="text" id="sloganInput">
+
+                <!-- Slogan Configuration -->
+                <div class="section-card">
+                    <label>2. Slogan Configuration</label>
+                    <input type="text" id="sloganInput" placeholder="Enter Slogan">
+                    <div class="style-controls">
+                        <select id="sloganFont">
+                            <option value="Poppins, sans-serif">Poppins</option>
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="cursive">Cursive</option>
+                        </select>
+                        <input type="number" id="sloganSize" placeholder="Size (px)" value="16">
+                        <input type="color" id="sloganColor" value="#666666" style="height: 42px; padding: 2px;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Logo</label>
-                    <input type="file" id="logoUpload">
-                    <button class="btn" onclick="uploadAsset('logo')">Update Logo</button>
+
+                <!-- Logo -->
+                <div class="section-card">
+                    <label>3. Website Logo</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="file" id="logoUpload">
+                        <button class="btn" onclick="uploadAsset('logo')">Upload</button>
+                    </div>
+                    <div id="logoPreviewArea" class="preview-container hidden">
+                        <img id="logoPreviewImg" class="preview-img" src="" alt="Logo">
+                        <button class="btn btn-danger" onclick="deleteAsset('logo')">Delete</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Favicon</label>
-                    <input type="file" id="faviconUpload">
-                    <button class="btn" onclick="uploadAsset('favicon')">Update Favicon</button>
+
+                <!-- Favicon -->
+                <div class="section-card">
+                    <label>4. Favicon</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="file" id="faviconUpload">
+                        <button class="btn" onclick="uploadAsset('favicon')">Upload</button>
+                    </div>
+                    <div id="faviconPreviewArea" class="preview-container hidden">
+                        <img id="faviconPreviewImg" class="preview-img" src="" alt="Favicon">
+                        <button class="btn btn-danger" onclick="deleteAsset('favicon')">Delete</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Hero Images (Upload 5)</label>
-                    <input type="file" id="heroUpload" multiple>
-                    <button class="btn" onclick="uploadHeroImages()">Upload Hero Images</button>
-                    <p id="heroStatus"></p>
+
+                <!-- Hero Images -->
+                <div class="section-card">
+                    <label>5. Hero Images (Max 5)</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="file" id="heroUpload" multiple>
+                        <button class="btn" onclick="uploadHeroImages()">Upload New</button>
+                    </div>
+                    <div id="heroList" class="hero-grid">
+                        <!-- Hero Images Rendered Here -->
+                    </div>
                 </div>
-                <button class="btn btn-success" onclick="saveGeneralSettings()">Save Settings</button>
+
+                <div style="text-align: right;">
+                    <button class="btn btn-success" style="padding: 15px 30px; font-size: 1.1rem;" onclick="saveGeneralSettings()">💾 Save All Settings</button>
+                </div>
             </div>
 
             <!-- Tab 2: Add Product -->
             <div id="tab2" class="tab-content hidden">
-                <h2>Add Product</h2>
-                <input type="text" id="prodName" placeholder="Product Name">
-                <input type="number" id="prodPrice" placeholder="Price">
-                <input type="text" id="prodLink" placeholder="Affiliate Link">
-                <input type="text" id="prodBtnLabel" placeholder="Button Label (e.g. Buy Now)">
-                <input type="file" id="prodImage">
-                <button class="btn btn-success" onclick="addProduct()">Publish Product</button>
+                <h2>Add New Product</h2>
+                <div class="section-card">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="prodName">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Price ($)</label>
+                            <input type="number" id="prodPrice">
+                        </div>
+                        <div class="form-group">
+                            <label>Button Label</label>
+                            <input type="text" id="prodBtnLabel" value="Buy Now">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Affiliate Link</label>
+                        <input type="text" id="prodLink">
+                    </div>
+                    <div class="form-group">
+                        <label>Product Image</label>
+                        <input type="file" id="prodImage">
+                    </div>
+                    <button class="btn btn-success" onclick="addProduct()">Publish Product</button>
+                </div>
             </div>
 
             <!-- Tab 3: All Products -->
             <div id="tab3" class="tab-content hidden">
-                <h2>All Products</h2>
+                <h2>Product Inventory</h2>
                 <div id="adminProductList" class="grid"></div>
             </div>
 
@@ -84,10 +384,14 @@
 
             <!-- Tab 5: Contact -->
             <div id="tab5" class="tab-content hidden">
-                <h2>Contact Info</h2>
-                <input type="text" id="phoneInput" placeholder="Phone Number">
-                <button class="btn btn-success" onclick="saveContact()">Save Phone</button>
+                <h2>Contact Information</h2>
+                <div class="section-card">
+                    <label>Customer Support Phone Number</label>
+                    <input type="text" id="phoneInput" placeholder="+1 234 567 8900">
+                    <button class="btn btn-success" style="margin-top: 15px;" onclick="saveContact()">Update Phone</button>
+                </div>
             </div>
+
         </div>
     </div>
 
@@ -140,16 +444,63 @@
             event.target.classList.add('active');
         };
 
-        // --- Tab 1: Settings ---
+        // --- Tab 1: Settings Logic (Expanded) ---
         async function loadAllData() {
-            // Load Settings
-            const docSnap = await getDoc(doc(db, "settings", "general"));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('webNameInput').value = data.websiteName || '';
-                document.getElementById('sloganInput').value = data.slogan || '';
-                document.getElementById('phoneInput').value = data.phone || '';
-            }
+            // Load General Settings
+            onSnapshot(doc(db, "settings", "general"), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Web Name
+                    document.getElementById('webNameInput').value = data.websiteName || '';
+                    document.getElementById('webNameFont').value = data.webNameFont || 'Poppins, sans-serif';
+                    document.getElementById('webNameSize').value = data.webNameSize || 24;
+                    document.getElementById('webNameColor').value = data.webNameColor || '#000000';
+
+                    // Slogan
+                    document.getElementById('sloganInput').value = data.slogan || '';
+                    document.getElementById('sloganFont').value = data.sloganFont || 'Poppins, sans-serif';
+                    document.getElementById('sloganSize').value = data.sloganSize || 16;
+                    document.getElementById('sloganColor').value = data.sloganColor || '#666666';
+
+                    // Phone
+                    document.getElementById('phoneInput').value = data.phone || '';
+
+                    // Logo Display
+                    const logoArea = document.getElementById('logoPreviewArea');
+                    const logoImg = document.getElementById('logoPreviewImg');
+                    if (data.logoUrl) {
+                        logoArea.classList.remove('hidden');
+                        logoImg.src = data.logoUrl;
+                    } else {
+                        logoArea.classList.add('hidden');
+                    }
+
+                    // Favicon Display
+                    const favArea = document.getElementById('faviconPreviewArea');
+                    const favImg = document.getElementById('faviconPreviewImg');
+                    if (data.faviconUrl) {
+                        favArea.classList.remove('hidden');
+                        favImg.src = data.faviconUrl;
+                    } else {
+                        favArea.classList.add('hidden');
+                    }
+
+                    // Hero Images Display
+                    const heroList = document.getElementById('heroList');
+                    heroList.innerHTML = '';
+                    if (data.heroImages && data.heroImages.length > 0) {
+                        data.heroImages.forEach((url, index) => {
+                            heroList.innerHTML += `
+                                <div class="hero-item">
+                                    <img src="${url}">
+                                    <div class="delete-overlay" onclick="deleteHeroImage(${index})">×</div>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+            });
 
             // Load Products
             const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -161,9 +512,12 @@
                     list.innerHTML += `
                         <div class="card">
                             <img src="${p.imageUrl}" alt="${p.name}">
-                            <h3>${p.name}</h3>
-                            <button class="btn" onclick="editProduct('${doc.id}')">Edit</button>
-                            <button class="btn btn-danger" onclick="deleteProduct('${doc.id}')" style="margin-top:5px">Delete</button>
+                            <h3 style="margin:0">${p.name}</h3>
+                            <p style="color:var(--primary); font-weight:bold;">$${p.price}</p>
+                            <div style="margin-top:auto; display:flex; gap:5px;">
+                                <button class="btn btn-outline" style="flex:1" onclick="editProduct('${doc.id}')">Edit</button>
+                                <button class="btn btn-danger" style="flex:1" onclick="deleteProduct('${doc.id}')">Delete</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -175,52 +529,106 @@
                 list.innerHTML = '';
                 snapshot.forEach(docSnap => {
                     const r = docSnap.data();
-                    const bg = r.status === 'approved' ? '#e8f5e9' : '#fff3e0';
+                    const isApproved = r.status === 'approved';
                     list.innerHTML += `
-                        <div class="review-card" style="background:${bg}">
-                            <strong>${r.name} (${r.stars} Stars)</strong>
-                            <p>${r.comment}</p>
-                            <small>Status: ${r.status}</small><br>
-                            ${r.status !== 'approved' ? `<button class="btn btn-success" onclick="approveReview('${docSnap.id}')">Publish</button>` : ''}
-                            <button class="btn btn-danger" onclick="deleteReview('${docSnap.id}')">Delete</button>
+                        <div class="review-card" style="border-left: 5px solid ${isApproved ? 'var(--success)' : '#fbbf24'}">
+                            <div style="display:flex; justify-content:space-between;">
+                                <strong>${r.name}</strong>
+                                <span style="color:#fbbf24">${'⭐'.repeat(r.stars)}</span>
+                            </div>
+                            <p style="color: #4b5563; margin: 5px 0;">"${r.comment}"</p>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <small style="color: #9ca3af; text-transform: uppercase; font-size: 0.75rem;">${r.status}</small>
+                                <div>
+                                    ${!isApproved ? `<button class="btn btn-success" style="padding:5px 10px;" onclick="approveReview('${docSnap.id}')">Approve</button>` : ''}
+                                    <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteReview('${docSnap.id}')">Delete</button>
+                                </div>
+                            </div>
                         </div>
                     `;
                 });
             });
         }
 
+        // --- SETTINGS: Save, Upload, Delete Logic ---
+
+        window.saveGeneralSettings = async () => {
+            const settingsData = {
+                websiteName: document.getElementById('webNameInput').value,
+                webNameFont: document.getElementById('webNameFont').value,
+                webNameSize: document.getElementById('webNameSize').value,
+                webNameColor: document.getElementById('webNameColor').value,
+
+                slogan: document.getElementById('sloganInput').value,
+                sloganFont: document.getElementById('sloganFont').value,
+                sloganSize: document.getElementById('sloganSize').value,
+                sloganColor: document.getElementById('sloganColor').value
+            };
+            
+            await setDoc(doc(db, "settings", "general"), settingsData, { merge: true });
+            alert("✅ Settings Saved Successfully!");
+        };
+
         window.uploadAsset = async (type) => {
             const file = document.getElementById(type + 'Upload').files[0];
-            if (!file) return;
-            const storageRef = ref(storage, `assets/${type}`);
+            if (!file) return alert("Please select a file first.");
+            
+            const storageRef = ref(storage, `assets/${type}_${Date.now()}`); // Unique name
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
+            
             await setDoc(doc(db, "settings", "general"), { [type + 'Url']: url }, { merge: true });
             alert(type + ' updated!');
         };
 
+        window.deleteAsset = async (type) => {
+            if(!confirm(`Delete the ${type}?`)) return;
+            // We just clear the URL in Firestore so it doesn't show up.
+            await setDoc(doc(db, "settings", "general"), { [type + 'Url']: "" }, { merge: true });
+        };
+
         window.uploadHeroImages = async () => {
             const files = document.getElementById('heroUpload').files;
-            if (files.length > 5) return alert("Max 5 images");
-            let urls = [];
+            if (files.length === 0) return alert("Select images first.");
+            
+            // Get current images first to append, or overwrite? Requirements say "display 5", usually implies add to list or replace.
+            // Let's implement ADDING to the list, but enforcing max 5 total.
+            
+            const docSnap = await getDoc(doc(db, "settings", "general"));
+            let currentImages = [];
+            if (docSnap.exists() && docSnap.data().heroImages) {
+                currentImages = docSnap.data().heroImages;
+            }
+
+            if (currentImages.length + files.length > 5) {
+                return alert(`You already have ${currentImages.length} images. You can only have 5 total. Please delete some first.`);
+            }
+
+            let newUrls = [];
             for (let i = 0; i < files.length; i++) {
-                const storageRef = ref(storage, `hero/hero_${i}`);
+                const storageRef = ref(storage, `hero/hero_${Date.now()}_${i}`);
                 await uploadBytes(storageRef, files[i]);
                 const url = await getDownloadURL(storageRef);
-                urls.push(url);
+                newUrls.push(url);
             }
-            await setDoc(doc(db, "settings", "general"), { heroImages: urls }, { merge: true });
-            alert("Hero images updated!");
+
+            const updatedList = [...currentImages, ...newUrls];
+            await setDoc(doc(db, "settings", "general"), { heroImages: updatedList }, { merge: true });
+            alert("Hero images uploaded!");
         };
 
-        window.saveGeneralSettings = async () => {
-            const name = document.getElementById('webNameInput').value;
-            const slogan = document.getElementById('sloganInput').value;
-            await setDoc(doc(db, "settings", "general"), { websiteName: name, slogan: slogan }, { merge: true });
-            alert("Saved!");
+        window.deleteHeroImage = async (index) => {
+            if(!confirm("Remove this image?")) return;
+            
+            const docSnap = await getDoc(doc(db, "settings", "general"));
+            if (docSnap.exists()) {
+                let images = docSnap.data().heroImages;
+                images.splice(index, 1); // Remove item at index
+                await setDoc(doc(db, "settings", "general"), { heroImages: images }, { merge: true });
+            }
         };
 
-        // --- Tab 2: Add Product ---
+        // --- Product Logic ---
         window.addProduct = async () => {
             const file = document.getElementById('prodImage').files[0];
             if(!file) return alert("Image required");
@@ -238,19 +646,23 @@
                 createdAt: Date.now()
             });
             alert("Product Published!");
+            // Clear inputs
+            document.getElementById('prodName').value = "";
+            document.getElementById('prodPrice').value = "";
+            document.getElementById('prodLink').value = "";
+            document.getElementById('prodImage').value = "";
         };
 
-        // --- Tab 3: Products Logic (Edit/Delete) ---
         window.deleteProduct = async (id) => {
             if(confirm("Delete this product?")) await deleteDoc(doc(db, "products", id));
         };
-        // Simplified Edit: Prompts for new price/name for brevity
+
         window.editProduct = async (id) => {
-            const newName = prompt("New Name:");
+            const newName = prompt("New Product Name:");
             if(newName) await updateDoc(doc(db, "products", id), { name: newName });
         };
 
-        // --- Tab 4: Reviews ---
+        // --- Reviews Logic ---
         window.approveReview = async (id) => {
             await updateDoc(doc(db, "reviews", id), { status: 'approved' });
         };
@@ -258,7 +670,7 @@
             await deleteDoc(doc(db, "reviews", id));
         };
 
-        // --- Tab 5: Contact ---
+        // --- Contact Logic ---
         window.saveContact = async () => {
             const phone = document.getElementById('phoneInput').value;
             await setDoc(doc(db, "settings", "general"), { phone: phone }, { merge: true });
