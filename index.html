@@ -27,7 +27,6 @@
             font-family: 'Inter', sans-serif; 
             background-color: var(--bg-body); 
             color: var(--text-main); 
-            /* Fixed: Removed padding-bottom to remove white space under footer */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -59,32 +58,51 @@
         #navWebName { font-weight: 700; margin: 0; line-height: 1.2; transition: all 0.3s; }
         #navSlogan { transition: all 0.3s; margin-top: 5px; }
 
-        /* --- Hero Section --- */
+        /* --- UPDATED HERO SECTION (Marquee / Auto-Sliding Line) --- */
         .hero-section { 
             position: relative; 
             width: 100%; 
-            height: 350px; 
+            /* Remove fixed height to allow ratio scaling */
             background: #000; 
             overflow: hidden; 
             margin-bottom: 30px;
+            display: flex; /* Enables the track to flow horizontally */
         }
-        .hero-slide { 
-            width: 100%; 
-            height: 100%; 
-            /* Fixed: Changed 'contain' to 'cover' so image fits width fully */
-            object-fit: cover; 
-            position: absolute; 
-            opacity: 0; 
-            transition: opacity 1s ease-in-out; 
-        }
-        .hero-slide.active { opacity: 1; }
 
-        /* --- Layout & Grids --- */
+        /* The moving track */
+        .hero-track {
+            display: flex;
+            width: fit-content;
+            /* Infinite smooth scrolling animation */
+            animation: scroll 20s linear infinite;
+        }
+
+        .hero-slide { 
+            /* 4 images in a line on large screens = 25% width */
+            width: 25vw; 
+            /* Force 1:1 Aspect Ratio */
+            aspect-ratio: 1 / 1; 
+            object-fit: cover; 
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Animation Keyframes */
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } /* Slide half way (because we duplicate images) */
+        }
+
+        /* Pause on hover if desired, or remove this block */
+        .hero-section:hover .hero-track {
+            animation-play-state: paused;
+        }
+
+        /* --- Layout & Grids (UPDATED) --- */
         .container { 
             max-width: 1200px; 
             margin: 0 auto; 
             padding: 0 15px; 
-            flex: 1; /* Pushes footer down */
+            flex: 1; 
         }
         
         .section-title {
@@ -95,17 +113,36 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            /* Fixed: Center align section names */
             justify-content: center;
             text-align: center;
         }
 
+        /* UPDATED GRID for Products & Reviews */
         .grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
             gap: 20px; 
-            /* Fixed: Center align product cards in the grid */
             justify-content: center;
+            
+            /* Default: Mobile (1 column) */
+            grid-template-columns: 1fr;
+        }
+
+        /* Tablet: 2 columns */
+        @media (min-width: 600px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Large Screens: Strictly 4 columns as requested */
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            /* Adjust review cards specifically if needed */
+            #reviewsContainer.grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
         }
 
         /* --- Cards --- */
@@ -118,17 +155,18 @@
             border: 1px solid #E5E7EB;
             display: flex;
             flex-direction: column;
+            width: 100%; /* Fill the grid cell */
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
         .card img { 
             width: 100%; 
-            height: 160px; 
+            height: 200px; /* Slightly taller for better focus */
             object-fit: cover; 
             background: #f3f4f6;
         }
         
-        .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; text-align: center; }
         
         .card h3 { 
             font-size: 1rem; 
@@ -167,7 +205,7 @@
             border: 1px solid #E5E7EB;
             margin-bottom: 15px;
             
-            /* Fixed: Ensure long words break on 250px screens */
+            /* Logic for small screens */
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: break-word;
@@ -193,15 +231,20 @@
             padding: 40px 20px; 
             background: #1F2937; 
             color: #9CA3AF; 
-            margin-top: auto; /* Pushes to bottom */
+            margin-top: auto; 
         }
 
         /* --- Responsive 250px Fixes --- */
         @media (max-width: 400px) {
-            .hero-section { height: 200px; }
+            .hero-section { 
+                height: auto; /* Let it scale */
+            }
+            .hero-slide {
+                width: 100vw; /* Full width on mobile */
+            }
             .grid { 
                 grid-template-columns: 1fr; /* 1 column on very small screens */
-                justify-items: center; /* Ensures cards are centered */
+                justify-items: center; 
             } 
             .card { width: 100%; }
             .section-title { font-size: 1.25rem; }
@@ -225,9 +268,11 @@
         <p id="navSlogan"></p>
     </div>
 
-    <!-- Hero Section -->
+    <!-- Hero Section (Marquee) -->
     <div id="hero" class="hero-section">
-        <!-- JS injects images here -->
+        <div id="heroTrack" class="hero-track">
+            <!-- JS injects images here -->
+        </div>
     </div>
 
     <div class="container">
@@ -246,13 +291,13 @@
 
         <!-- Reviews -->
         <h2 class="section-title">⭐ Customer Reviews</h2>
-        <div id="reviewsContainer">
+        <div id="reviewsContainer" class="grid" style="grid-template-columns: 1fr;"> <!-- grid class added here via JS/CSS -->
             <!-- JS injects content -->
         </div>
         
         <!-- Write Review -->
-        <div class="card" style="padding: 20px; margin-top: 30px;">
-            <h3 style="margin-bottom: 10px;">Write a Review</h3>
+        <div class="card" style="padding: 20px; margin-top: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
+            <h3 style="margin-bottom: 10px; text-align: center;">Write a Review</h3>
             <input type="text" id="revName" placeholder="Your Name">
             <textarea id="revComment" placeholder="Share your experience..."></textarea>
             <select id="revStars">
@@ -267,7 +312,7 @@
 
         <!-- Contact Us -->
         <h2 class="section-title">📞 Contact Us</h2>
-        <div class="card" style="text-align: center; padding: 30px;">
+        <div class="card" style="text-align: center; padding: 30px; max-width: 600px; margin: 0 auto;">
             <p style="font-size: 1.2rem; color: var(--text-muted);">Need help? Call us at:</p>
             <p style="font-size: 1.8rem; color: var(--primary); font-weight: 700; margin-top: 10px;" id="contactPhone">Loading...</p>
         </div>
@@ -335,17 +380,19 @@
                 }
                 if(data.faviconUrl) document.getElementById('favicon-link').href = data.faviconUrl;
 
-                // Hero Slider
-                const heroDiv = document.getElementById('hero');
-                heroDiv.innerHTML = '';
+                // Hero Slider (UPDATED Logic for Marquee)
+                const heroTrack = document.getElementById('heroTrack');
                 if(data.heroImages && data.heroImages.length > 0) {
-                    data.heroImages.forEach((img, index) => {
-                        // Using object-fit: cover via CSS now to fit width
-                        heroDiv.innerHTML += `<img src="${img}" class="hero-slide ${index === 0 ? 'active' : ''}">`;
+                    // Create the HTML string for images
+                    let imagesHtml = '';
+                    data.heroImages.forEach((img) => {
+                        imagesHtml += `<img src="${img}" class="hero-slide">`;
                     });
-                    startSlider();
+
+                    // Duplicate the images to create seamless loop effect (Double the content)
+                    heroTrack.innerHTML = imagesHtml + imagesHtml; 
                 } else {
-                    heroDiv.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:white;">No images uploaded</div>';
+                    heroTrack.innerHTML = '<div style="width:100%; height:300px; display:flex; align-items:center; justify-content:center; color:white;">No images uploaded</div>';
                 }
             }
         });
@@ -374,12 +421,13 @@
             }
 
             products.forEach(p => {
+                // CHANGED: Currency from $ to Rs.
                 container.innerHTML += `
                     <div class="card">
                         <img src="${p.imageUrl}" alt="${p.name}">
                         <div class="card-body">
                             <h3>${p.name}</h3>
-                            <p class="price">$${p.price}</p>
+                            <p class="price">Rs. ${p.price}</p>
                             <button class="btn" onclick="window.open('${p.link}', '_blank')">
                                 ${p.buttonLabel || 'Buy Now'}
                             </button>
@@ -394,8 +442,12 @@
         onSnapshot(rQ, (snapshot) => {
             const container = document.getElementById('reviewsContainer');
             container.innerHTML = '';
+            
+            // Ensure the grid class is active for 4-in-line layout
+            container.className = "grid"; 
+
             if (snapshot.empty) {
-                container.innerHTML = '<p style="color:#999; text-align:center;">No reviews yet. Be the first!</p>';
+                container.innerHTML = '<p style="color:#999; text-align:center; grid-column: 1/-1;">No reviews yet. Be the first!</p>';
                 return;
             }
             snapshot.forEach(doc => {
@@ -414,22 +466,10 @@
         });
 
         // --- LOGIC HELPER FUNCTIONS ---
-        
-        let slideInterval;
-        let slideIndex = 0;
-        
+        // Note: slideInterval logic removed as we switched to CSS Marquee for the hero section
+        // But function kept to avoid errors if referenced elsewhere, though not used now.
         function startSlider() {
-            const slides = document.querySelectorAll('.hero-slide');
-            if(slides.length === 0) return;
-            
-            // Clear existing interval to prevent speeding up on re-renders
-            if (slideInterval) clearInterval(slideInterval);
-
-            slideInterval = setInterval(() => {
-                slides[slideIndex].classList.remove('active');
-                slideIndex = (slideIndex + 1) % slides.length;
-                slides[slideIndex].classList.add('active');
-            }, 3000); 
+           // Slider logic replaced by CSS marquee.
         }
 
         window.submitReview = async () => {
