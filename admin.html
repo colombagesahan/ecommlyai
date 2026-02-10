@@ -136,6 +136,8 @@
             transition: border-color 0.2s;
             box-sizing: border-box; /* Important fix */
         }
+        
+        textarea { resize: vertical; min-height: 100px; }
 
         input:focus {
             border-color: var(--primary);
@@ -168,6 +170,7 @@
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); font-size: 0.8rem; padding: 6px 12px;}
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-sm { padding: 5px 10px; font-size: 0.85rem; }
 
         /* Image Previews */
         .preview-container {
@@ -230,6 +233,30 @@
         .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
         .review-card { padding: 15px; margin-bottom: 10px; border-radius: var(--radius); border: 1px solid var(--border); }
 
+        /* Toggle Switch */
+        .toggle-container { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .toggle-switch {
+            position: relative; width: 50px; height: 26px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        
+        /* Order List */
+        .order-row {
+            background: white; border: 1px solid var(--border); border-radius: 8px;
+            padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .order-row:hover { box-shadow: var(--shadow); }
+
         @media (max-width: 768px) {
             .admin-container { flex-direction: column; }
             .sidebar { width: 100%; padding: 10px; }
@@ -253,8 +280,9 @@
         <div class="sidebar">
             <h2>🛍️ E-Comm Admin</h2>
             <button onclick="showTab('tab1')" class="active">⚙️ General Settings</button>
-            <button onclick="showTab('tab2')">➕ Add Product</button>
-            <button onclick="showTab('tab3')">📦 All Products</button>
+            <button onclick="showTab('tab6')">📦 New Orders</button>
+            <button onclick="showTab('tab2')">➕ Add/Edit Product</button>
+            <button onclick="showTab('tab3')">📋 All Products</button>
             <button onclick="showTab('tab4')">⭐ Reviews</button>
             <button onclick="showTab('tab5')">📞 Contact Info</button>
             <button onclick="logout()" style="margin-top: auto; color: #ff6b6b; border: 1px solid #ff6b6b;">Log Out</button>
@@ -340,37 +368,59 @@
                 </div>
             </div>
 
-            <!-- Tab 2: Add Product -->
+            <!-- Tab 2: Add Product (UPDATED) -->
             <div id="tab2" class="tab-content hidden">
-                <h2>Add New Product</h2>
+                <h2 id="tab2Title">Add New Product</h2>
+                <input type="hidden" id="editProductId"> <!-- Hidden field for edit ID -->
+                
                 <div class="section-card">
                     <div class="form-group">
                         <label>Product Name</label>
                         <input type="text" id="prodName">
                     </div>
+                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
                             <label>Price (Rs.)</label>
                             <input type="number" id="prodPrice">
                         </div>
                         <div class="form-group">
-                            <label>Button Label</label>
-                            <input type="text" id="prodBtnLabel" value="Buy Now">
+                            <label>Button Label (Home Card)</label>
+                            <input type="text" id="prodBtnLabel" value="See More">
                         </div>
                     </div>
+
                     <div class="form-group">
-                        <label>Affiliate Link</label>
-                        <input type="text" id="prodLink">
+                        <label>Product Slug (Unique URL Identifier, e.g. blue-shoes-01)</label>
+                        <input type="text" id="prodSlug" placeholder="my-awesome-product">
                     </div>
+
                     <div class="form-group">
-                        <label>Product Image</label>
-                        <input type="file" id="prodImage">
+                        <label>Product Description</label>
+                        <textarea id="prodDesc" placeholder="Full details about the product..."></textarea>
                     </div>
-                    <button class="btn btn-success" onclick="addProduct()">Publish Product</button>
+
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="prodStock" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>In Stock (Green Badge)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Product Images (Max 5)</label>
+                        <input type="file" id="prodImages" multiple>
+                        <small style="color:var(--text-muted)">Select multiple files at once. Top one is main image.</small>
+                        <div id="editImagePreview" class="hero-grid"></div>
+                    </div>
+
+                    <button id="saveProductBtn" class="btn btn-success" onclick="saveProduct()">Publish Product</button>
+                    <button id="cancelEditBtn" class="btn btn-outline hidden" onclick="cancelEdit()">Cancel Edit</button>
                 </div>
             </div>
 
-            <!-- Tab 3: All Products -->
+            <!-- Tab 3: All Products (UPDATED) -->
             <div id="tab3" class="tab-content hidden">
                 <h2>Product Inventory</h2>
                 <div id="adminProductList" class="grid"></div>
@@ -389,6 +439,14 @@
                     <label>Customer Support Phone Number</label>
                     <input type="text" id="phoneInput" placeholder="+1 234 567 8900">
                     <button class="btn btn-success" style="margin-top: 15px;" onclick="saveContact()">Update Phone</button>
+                </div>
+            </div>
+
+            <!-- Tab 6: Orders (NEW) -->
+            <div id="tab6" class="tab-content hidden">
+                <h2>Incoming Orders (COD)</h2>
+                <div id="ordersList">
+                    <!-- Orders Injected Here -->
                 </div>
             </div>
 
@@ -444,29 +502,23 @@
             event.target.classList.add('active');
         };
 
-        // --- Tab 1: Settings Logic (Expanded) ---
+        // --- Data Loading ---
         async function loadAllData() {
-            // Load General Settings
-            onSnapshot(doc(db, "settings", "general"), (docSnap) => {
+            // ... (Settings, Logo, Hero Images logic remains same as original)
+             onSnapshot(doc(db, "settings", "general"), (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     
-                    // Web Name
                     document.getElementById('webNameInput').value = data.websiteName || '';
                     document.getElementById('webNameFont').value = data.webNameFont || 'Poppins, sans-serif';
                     document.getElementById('webNameSize').value = data.webNameSize || 24;
                     document.getElementById('webNameColor').value = data.webNameColor || '#000000';
-
-                    // Slogan
                     document.getElementById('sloganInput').value = data.slogan || '';
                     document.getElementById('sloganFont').value = data.sloganFont || 'Poppins, sans-serif';
                     document.getElementById('sloganSize').value = data.sloganSize || 16;
                     document.getElementById('sloganColor').value = data.sloganColor || '#666666';
-
-                    // Phone
                     document.getElementById('phoneInput').value = data.phone || '';
 
-                    // Logo Display
                     const logoArea = document.getElementById('logoPreviewArea');
                     const logoImg = document.getElementById('logoPreviewImg');
                     if (data.logoUrl) {
@@ -476,7 +528,6 @@
                         logoArea.classList.add('hidden');
                     }
 
-                    // Favicon Display
                     const favArea = document.getElementById('faviconPreviewArea');
                     const favImg = document.getElementById('faviconPreviewImg');
                     if (data.faviconUrl) {
@@ -486,7 +537,6 @@
                         favArea.classList.add('hidden');
                     }
 
-                    // Hero Images Display
                     const heroList = document.getElementById('heroList');
                     heroList.innerHTML = '';
                     if (data.heroImages && data.heroImages.length > 0) {
@@ -502,21 +552,33 @@
                 }
             });
 
-            // Load Products
+            // Load Products (Including hidden ones)
             const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('adminProductList');
                 list.innerHTML = '';
                 snapshot.forEach(doc => {
                     const p = doc.data();
+                    let img = p.imageUrl;
+                    if(p.images && p.images.length > 0) img = p.images[0];
+
+                    const visibilityLabel = p.hidden ? "👁️ Hidden" : "✅ Visible";
+                    const stockLabel = (p.inStock === false) ? "🔴 Out of Stock" : "🟢 In Stock";
+
                     list.innerHTML += `
-                        <div class="card">
-                            <img src="${p.imageUrl}" alt="${p.name}">
+                        <div class="card" style="opacity: ${p.hidden ? 0.6 : 1}">
+                            <img src="${img}" alt="${p.name}">
                             <h3 style="margin:0">${p.name}</h3>
-                            <p style="color:var(--primary); font-weight:bold;">$${p.price}</p>
-                            <div style="margin-top:auto; display:flex; gap:5px;">
-                                <button class="btn btn-outline" style="flex:1" onclick="editProduct('${doc.id}')">Edit</button>
-                                <button class="btn btn-danger" style="flex:1" onclick="deleteProduct('${doc.id}')">Delete</button>
+                            <p style="color:var(--primary); font-weight:bold;">Rs. ${p.price}</p>
+                            <div style="font-size:0.8rem; margin:5px 0;">${stockLabel} | ${visibilityLabel}</div>
+                            <div style="margin-top:auto; display:flex; flex-direction:column; gap:5px;">
+                                <div style="display:flex; gap:5px;">
+                                    <button class="btn btn-outline btn-sm" style="flex:1" onclick="loadProductToEdit('${doc.id}')">Edit</button>
+                                    <button class="btn btn-sm ${p.hidden ? 'btn-success' : 'btn-outline'}" style="flex:1" onclick="toggleVisibility('${doc.id}', ${!p.hidden})">
+                                        ${p.hidden ? 'Show' : 'Hide'}
+                                    </button>
+                                </div>
+                                <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Delete</button>
                             </div>
                         </div>
                     `;
@@ -548,10 +610,39 @@
                     `;
                 });
             });
+
+            // Load Orders (NEW)
+            const oQ = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+            onSnapshot(oQ, (snapshot) => {
+                const list = document.getElementById('ordersList');
+                list.innerHTML = '';
+                if(snapshot.empty) list.innerHTML = '<p>No orders yet.</p>';
+                
+                snapshot.forEach(doc => {
+                    const o = doc.data();
+                    const date = new Date(o.createdAt).toLocaleString();
+                    const item = o.items[0]; // Assuming single item checkout
+                    
+                    list.innerHTML += `
+                        <div class="order-row">
+                            <div>
+                                <h3 style="margin:0">${o.customerName}</h3>
+                                <div style="color:var(--text-muted); font-size:0.9rem;">${o.customerPhone}</div>
+                                <div style="font-size:0.85rem; max-width: 300px;">${o.customerAddress}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-weight:700; color:var(--primary);">${item.name}</div>
+                                <div>Rs. ${o.totalAmount}</div>
+                                <small>${date}</small>
+                                <div style="color:var(--success); font-weight:bold;">${o.paymentMethod}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
         }
 
-        // --- SETTINGS: Save, Upload, Delete Logic ---
-
+        // --- SETTINGS LOGIC (Original + Updates) ---
         window.saveGeneralSettings = async () => {
             const settingsData = {
                 websiteName: document.getElementById('webNameInput').value,
@@ -564,7 +655,6 @@
                 sloganSize: document.getElementById('sloganSize').value,
                 sloganColor: document.getElementById('sloganColor').value
             };
-            
             await setDoc(doc(db, "settings", "general"), settingsData, { merge: true });
             alert("✅ Settings Saved Successfully!");
         };
@@ -572,37 +662,23 @@
         window.uploadAsset = async (type) => {
             const file = document.getElementById(type + 'Upload').files[0];
             if (!file) return alert("Please select a file first.");
-            
-            const storageRef = ref(storage, `assets/${type}_${Date.now()}`); // Unique name
+            const storageRef = ref(storage, `assets/${type}_${Date.now()}`); 
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
-            
             await setDoc(doc(db, "settings", "general"), { [type + 'Url']: url }, { merge: true });
             alert(type + ' updated!');
         };
-
         window.deleteAsset = async (type) => {
             if(!confirm(`Delete the ${type}?`)) return;
-            // We just clear the URL in Firestore so it doesn't show up.
             await setDoc(doc(db, "settings", "general"), { [type + 'Url']: "" }, { merge: true });
         };
-
         window.uploadHeroImages = async () => {
             const files = document.getElementById('heroUpload').files;
             if (files.length === 0) return alert("Select images first.");
-            
-            // Get current images first to append, or overwrite? Requirements say "display 5", usually implies add to list or replace.
-            // Let's implement ADDING to the list, but enforcing max 5 total.
-            
             const docSnap = await getDoc(doc(db, "settings", "general"));
-            let currentImages = [];
-            if (docSnap.exists() && docSnap.data().heroImages) {
-                currentImages = docSnap.data().heroImages;
-            }
-
-            if (currentImages.length + files.length > 5) {
-                return alert(`You already have ${currentImages.length} images. You can only have 5 total. Please delete some first.`);
-            }
+            let currentImages = (docSnap.exists() && docSnap.data().heroImages) ? docSnap.data().heroImages : [];
+            
+            if (currentImages.length + files.length > 5) return alert("Max 5 images total.");
 
             let newUrls = [];
             for (let i = 0; i < files.length; i++) {
@@ -611,72 +687,141 @@
                 const url = await getDownloadURL(storageRef);
                 newUrls.push(url);
             }
-
-            const updatedList = [...currentImages, ...newUrls];
-            await setDoc(doc(db, "settings", "general"), { heroImages: updatedList }, { merge: true });
+            await setDoc(doc(db, "settings", "general"), { heroImages: [...currentImages, ...newUrls] }, { merge: true });
             alert("Hero images uploaded!");
         };
-
         window.deleteHeroImage = async (index) => {
             if(!confirm("Remove this image?")) return;
-            
             const docSnap = await getDoc(doc(db, "settings", "general"));
             if (docSnap.exists()) {
                 let images = docSnap.data().heroImages;
-                images.splice(index, 1); // Remove item at index
+                images.splice(index, 1);
                 await setDoc(doc(db, "settings", "general"), { heroImages: images }, { merge: true });
             }
         };
 
-        // --- Product Logic ---
-        window.addProduct = async () => {
-            const file = document.getElementById('prodImage').files[0];
-            if(!file) return alert("Image required");
-            
-            const storageRef = ref(storage, `products/${Date.now()}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
+        // --- PRODUCT LOGIC (ADD / EDIT) ---
+        window.saveProduct = async () => {
+            const id = document.getElementById('editProductId').value;
+            const name = document.getElementById('prodName').value;
+            const price = document.getElementById('prodPrice').value;
+            const slug = document.getElementById('prodSlug').value;
+            const desc = document.getElementById('prodDesc').value;
+            const inStock = document.getElementById('prodStock').checked;
+            const btnLabel = document.getElementById('prodBtnLabel').value;
+            const files = document.getElementById('prodImages').files;
 
-            await addDoc(collection(db, "products"), {
-                name: document.getElementById('prodName').value,
-                price: document.getElementById('prodPrice').value,
-                link: document.getElementById('prodLink').value,
-                buttonLabel: document.getElementById('prodBtnLabel').value,
-                imageUrl: url,
-                createdAt: Date.now()
-            });
-            alert("Product Published!");
-            // Clear inputs
+            if(!name || !price) return alert("Name and Price are required.");
+
+            // Handle Images
+            let imageUrls = [];
+            
+            // If editing, keep old images unless explicitly replaced (logic simplified here: appending)
+            // Ideally in edit mode, we might want to clear or keep.
+            // For this implementation: If new files selected, upload them.
+            
+            if (files.length > 0) {
+                 if (files.length > 5) return alert("Max 5 images allowed.");
+                 for(let i=0; i<files.length; i++){
+                    const storageRef = ref(storage, `products/${Date.now()}_${i}`);
+                    await uploadBytes(storageRef, files[i]);
+                    imageUrls.push(await getDownloadURL(storageRef));
+                 }
+            } else if (id) {
+                // If editing and no new files, keep existing (fetch logic needed or pass in)
+                // We'll rely on the existing data in Firestore merge, but wait: 
+                // if we don't send 'images', merge:true keeps them. 
+                // However, we need to know if we are creating.
+            } else {
+                return alert("Please upload at least one image for a new product.");
+            }
+
+            const data = {
+                name,
+                price: Number(price),
+                slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+                description: desc,
+                inStock,
+                buttonLabel: btnLabel,
+                hidden: false, // Default visible
+                createdAt: id ? undefined : Date.now() // Don't overwrite created date on edit
+            };
+            
+            // Only update images if new ones were uploaded
+            if(imageUrls.length > 0) {
+                data.images = imageUrls;
+                data.imageUrl = imageUrls[0]; // Legacy support
+            }
+
+            // Remove undefined fields
+            Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
+
+            if(id) {
+                await setDoc(doc(db, "products", id), data, { merge: true });
+                alert("Product Updated!");
+            } else {
+                await addDoc(collection(db, "products"), data);
+                alert("Product Published!");
+            }
+
+            cancelEdit(); // Reset form
+        };
+
+        window.loadProductToEdit = async (id) => {
+            const docSnap = await getDoc(doc(db, "products", id));
+            if(!docSnap.exists()) return;
+            const p = docSnap.data();
+
+            document.getElementById('editProductId').value = id;
+            document.getElementById('prodName').value = p.name;
+            document.getElementById('prodPrice').value = p.price;
+            document.getElementById('prodSlug').value = p.slug || '';
+            document.getElementById('prodDesc').value = p.description || '';
+            document.getElementById('prodBtnLabel').value = p.buttonLabel || 'See More';
+            document.getElementById('prodStock').checked = (p.inStock !== false);
+
+            document.getElementById('tab2Title').innerText = "Edit Product";
+            document.getElementById('saveProductBtn').innerText = "Update Product";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            showTab('tab2'); // Switch to tab
+        };
+
+        window.cancelEdit = () => {
+            document.getElementById('editProductId').value = "";
             document.getElementById('prodName').value = "";
             document.getElementById('prodPrice').value = "";
-            document.getElementById('prodLink').value = "";
-            document.getElementById('prodImage').value = "";
+            document.getElementById('prodSlug').value = "";
+            document.getElementById('prodDesc').value = "";
+            document.getElementById('prodImages').value = "";
+            document.getElementById('prodStock').checked = true;
+            
+            document.getElementById('tab2Title').innerText = "Add New Product";
+            document.getElementById('saveProductBtn').innerText = "Publish Product";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
         };
 
         window.deleteProduct = async (id) => {
             if(confirm("Delete this product?")) await deleteDoc(doc(db, "products", id));
         };
 
-        window.editProduct = async (id) => {
-            const newName = prompt("New Product Name:");
-            if(newName) await updateDoc(doc(db, "products", id), { name: newName });
+        window.toggleVisibility = async (id, status) => {
+            await updateDoc(doc(db, "products", id), { hidden: status });
         };
 
-        // --- Reviews Logic ---
+        // --- Reviews & Contact ---
         window.approveReview = async (id) => {
             await updateDoc(doc(db, "reviews", id), { status: 'approved' });
         };
         window.deleteReview = async (id) => {
             await deleteDoc(doc(db, "reviews", id));
         };
-
-        // --- Contact Logic ---
         window.saveContact = async () => {
             const phone = document.getElementById('phoneInput').value;
             await setDoc(doc(db, "settings", "general"), { phone: phone }, { merge: true });
             alert("Phone Updated");
         };
+
     </script>
 </body>
 </html>
-
