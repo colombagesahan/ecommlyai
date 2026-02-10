@@ -19,6 +19,8 @@
             --card-bg: #ffffff;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --radius: 12px;
+            --success: #10B981;
+            --danger: #EF4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -156,6 +158,7 @@
             display: flex;
             flex-direction: column;
             width: 100%; /* Fill the grid cell */
+            position: relative;
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
@@ -195,6 +198,8 @@
             transition: background 0.2s;
         }
         .btn:hover { background: var(--primary-dark); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: #EEF2FF; }
 
         /* --- Reviews --- */
         .review-card {
@@ -251,17 +256,78 @@
             nav { padding: 10px; }
             .logo-img { width: 35px; height: 35px; }
         }
+
+        /* --- NEW STYLES FOR PRODUCT DESCRIPTION PAGE & MODALS --- */
+        .hidden { display: none !important; }
+
+        /* Product Detail View (Mimics a new page) */
+        #productDetailView {
+            background: var(--bg-body);
+            padding-bottom: 50px;
+        }
+        .breadcrumb { margin: 20px 0; color: var(--text-muted); cursor: pointer; }
+        .product-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        @media (max-width: 768px) {
+            .product-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Amazon Style Gallery */
+        .gallery-container { display: flex; flex-direction: column; gap: 10px; }
+        .main-image { width: 100%; height: 400px; object-fit: contain; border: 1px solid #eee; border-radius: 8px; }
+        .thumbnail-row { display: flex; gap: 10px; overflow-x: auto; }
+        .thumbnail { width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+        .thumbnail:hover, .thumbnail.active { border-color: var(--primary); }
+
+        .product-info h1 { font-size: 1.8rem; margin-bottom: 10px; }
+        .stock-badge { 
+            display: inline-block; padding: 4px 10px; border-radius: 20px; 
+            font-size: 0.85rem; font-weight: 600; margin-bottom: 15px;
+        }
+        .in-stock { background: #D1FAE5; color: #065F46; }
+        .out-stock { background: #FEE2E2; color: #991B1B; }
+
+        .desc-box { margin: 20px 0; line-height: 1.6; color: #4B5563; white-space: pre-wrap; }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; width: 90%; max-width: 500px;
+            padding: 30px; border-radius: var(--radius);
+            max-height: 90vh; overflow-y: auto;
+            position: relative;
+        }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; }
+
+        .badge-corner {
+            position: absolute; top: 10px; right: 10px;
+            background: var(--danger); color: white; padding: 4px 8px;
+            border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+        }
     </style>
 </head>
 <body>
 
     <!-- Navbar with Dynamic Styling -->
     <nav>
-        <img id="navLogo" class="logo-img" src="" alt="" style="display:none;">
-        <div style="flex-grow: 1;">
+        <img id="navLogo" class="logo-img" src="" alt="" style="display:none; cursor:pointer;" onclick="goHome()">
+        <div style="flex-grow: 1; cursor:pointer;" onclick="goHome()">
             <h2 id="navWebName"></h2>
             <p style="margin: 0; font-size: 0.85rem; color: #6B7280; font-weight: 500;"><strong>Online Store</strong></p>
         </div>
+        <!-- Simple Cart Indicator (Optional) -->
+        <button class="btn" style="width: auto; padding: 8px 15px;" onclick="openCart()">🛒 Cart</button>
     </nav>
 
     <!-- Header Slogan with Dynamic Styling -->
@@ -269,55 +335,126 @@
         <p id="navSlogan"></p>
     </div>
 
-    <!-- Hero Section (Marquee) -->
-    <div id="hero" class="hero-section">
-        <div id="heroTrack" class="hero-track">
-            <!-- JS injects images here -->
+    <!-- MAIN HOME VIEW -->
+    <div id="homeView">
+        <!-- Hero Section (Marquee) -->
+        <div id="hero" class="hero-section">
+            <div id="heroTrack" class="hero-track">
+                <!-- JS injects images here -->
+            </div>
+        </div>
+
+        <div class="container">
+            
+            <!-- New Arrivals -->
+            <h2 class="section-title">✨ New Arrivals</h2>
+            <div id="newArrivals" class="grid">
+                <!-- JS injects content -->
+            </div>
+
+            <!-- Best Sellers -->
+            <h2 class="section-title">🔥 Best Sellers</h2>
+            <div id="bestSellers" class="grid">
+                <!-- JS injects content -->
+            </div>
+
+            <!-- Reviews -->
+            <h2 class="section-title">⭐ Customer Reviews</h2>
+            <div id="reviewsContainer" class="grid" style="grid-template-columns: 1fr;"> <!-- grid class added here via JS/CSS -->
+                <!-- JS injects content -->
+            </div>
+            
+            <!-- Write Review -->
+            <div class="card" style="padding: 20px; margin-top: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                <h3 style="margin-bottom: 10px; text-align: center;">Write a Review</h3>
+                <input type="text" id="revName" placeholder="Your Name">
+                <textarea id="revComment" placeholder="Share your experience..."></textarea>
+                <select id="revStars">
+                    <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                    <option value="4">⭐⭐⭐⭐ (Good)</option>
+                    <option value="3">⭐⭐⭐ (Average)</option>
+                    <option value="2">⭐⭐ (Poor)</option>
+                    <option value="1">⭐ (Terrible)</option>
+                </select>
+                <button class="btn" onclick="submitReview()">Submit Review</button>
+            </div>
+
+            <!-- Contact Us -->
+            <h2 class="section-title">📞 Contact Us</h2>
+            <div class="card" style="text-align: center; padding: 30px; max-width: 600px; margin: 0 auto;">
+                <p style="font-size: 1.2rem; color: var(--text-muted);">Need help? Call us at:</p>
+                <p style="font-size: 1.8rem; color: var(--primary); font-weight: 700; margin-top: 10px;" id="contactPhone">Loading...</p>
+            </div>
+
         </div>
     </div>
 
-    <div class="container">
+    <!-- PRODUCT DETAIL VIEW (Hidden by default) -->
+    <div id="productDetailView" class="container hidden" style="margin-top: 20px;">
+        <div class="breadcrumb" onclick="goHome()">← Back to Shop</div>
         
-        <!-- New Arrivals -->
-        <h2 class="section-title">✨ New Arrivals</h2>
-        <div id="newArrivals" class="grid">
-            <!-- JS injects content -->
+        <div class="product-layout">
+            <!-- Left: Gallery -->
+            <div class="gallery-container">
+                <img id="pdMainImg" class="main-image" src="" alt="Main Product Image">
+                <div id="pdThumbnails" class="thumbnail-row">
+                    <!-- Thumbnails injected here -->
+                </div>
+            </div>
+            
+            <!-- Right: Info -->
+            <div class="product-info">
+                <h1 id="pdName">Product Name</h1>
+                <span id="pdStock" class="stock-badge in-stock">In Stock</span>
+                <p class="price" id="pdPrice" style="font-size: 1.5rem; margin-top: 10px;">Rs. 0</p>
+                
+                <p id="pdDesc" class="desc-box">
+                    Product description goes here...
+                </p>
+
+                <button class="btn" style="padding: 15px; font-size: 1.1rem;" onclick="addToCartAndCheckout()">
+                    Buy Now
+                </button>
+            </div>
         </div>
 
-        <!-- Best Sellers -->
-        <h2 class="section-title">🔥 Best Sellers</h2>
-        <div id="bestSellers" class="grid">
-            <!-- JS injects content -->
+        <!-- Upsell Section -->
+        <h2 class="section-title">You May Also Like</h2>
+        <div id="upsellContainer" class="grid">
+            <!-- Random products -->
         </div>
+    </div>
 
-        <!-- Reviews -->
-        <h2 class="section-title">⭐ Customer Reviews</h2>
-        <div id="reviewsContainer" class="grid" style="grid-template-columns: 1fr;"> <!-- grid class added here via JS/CSS -->
-            <!-- JS injects content -->
-        </div>
-        
-        <!-- Write Review -->
-        <div class="card" style="padding: 20px; margin-top: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
-            <h3 style="margin-bottom: 10px; text-align: center;">Write a Review</h3>
-            <input type="text" id="revName" placeholder="Your Name">
-            <textarea id="revComment" placeholder="Share your experience..."></textarea>
-            <select id="revStars">
-                <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
-                <option value="4">⭐⭐⭐⭐ (Good)</option>
-                <option value="3">⭐⭐⭐ (Average)</option>
-                <option value="2">⭐⭐ (Poor)</option>
-                <option value="1">⭐ (Terrible)</option>
-            </select>
-            <button class="btn" onclick="submitReview()">Submit Review</button>
-        </div>
+    <!-- CART MODAL -->
+    <div id="cartModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeCart()">×</span>
+            <h2 style="margin-bottom: 20px; text-align: center;">Checkout</h2>
+            
+            <div id="cartItemDetails" style="margin-bottom: 20px; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                <!-- Selected Item details -->
+            </div>
 
-        <!-- Contact Us -->
-        <h2 class="section-title">📞 Contact Us</h2>
-        <div class="card" style="text-align: center; padding: 30px; max-width: 600px; margin: 0 auto;">
-            <p style="font-size: 1.2rem; color: var(--text-muted);">Need help? Call us at:</p>
-            <p style="font-size: 1.8rem; color: var(--primary); font-weight: 700; margin-top: 10px;" id="contactPhone">Loading...</p>
-        </div>
+            <form id="checkoutForm" onsubmit="event.preventDefault(); submitOrder();">
+                <label>Full Name</label>
+                <input type="text" id="custName" required placeholder="John Doe">
+                
+                <label>Phone Number</label>
+                <input type="text" id="custPhone" required placeholder="07x xxxxxxx">
+                
+                <label>Shipping Address</label>
+                <textarea id="custAddress" required placeholder="House No, Street, City..."></textarea>
+                
+                <div style="background: #ECFDF5; padding: 10px; border-radius: 8px; margin: 15px 0; color: #065F46; text-align: center;">
+                    <strong>✅ We accept Cash on Delivery (COD)</strong>
+                </div>
 
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-outline" onclick="closeCart()">Continue Shopping</button>
+                    <button type="submit" class="btn">Confirm Order</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -328,7 +465,7 @@
     <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, collection, addDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, addDoc, onSnapshot, query, orderBy, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Your Exact Config
         const firebaseConfig = {
@@ -348,6 +485,9 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
+
+        let allProductsCache = [];
+        let currentProduct = null;
 
         // --- 1. SETTINGS & DYNAMIC STYLING ---
         onSnapshot(doc(db, "settings", "general"), (doc) => {
@@ -384,13 +524,10 @@
                 // Hero Slider (UPDATED Logic for Marquee)
                 const heroTrack = document.getElementById('heroTrack');
                 if(data.heroImages && data.heroImages.length > 0) {
-                    // Create the HTML string for images
                     let imagesHtml = '';
                     data.heroImages.forEach((img) => {
                         imagesHtml += `<img src="${img}" class="hero-slide">`;
                     });
-
-                    // Duplicate the images to create seamless loop effect (Double the content)
                     heroTrack.innerHTML = imagesHtml + imagesHtml; 
                 } else {
                     heroTrack.innerHTML = '<div style="width:100%; height:300px; display:flex; align-items:center; justify-content:center; color:white;">No images uploaded</div>';
@@ -402,14 +539,24 @@
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
             const allProducts = [];
-            snapshot.forEach(doc => allProducts.push(doc.data()));
+            snapshot.forEach(doc => {
+                let p = doc.data();
+                p.id = doc.id;
+                allProducts.push(p);
+            });
+
+            // Filter out hidden products
+            allProductsCache = allProducts.filter(p => !p.hidden);
 
             // Logic: Top 4 are New Arrivals, rest are Best Sellers
-            const newArrivals = allProducts.slice(0, 4);
-            const bestSellers = allProducts.slice(4);
+            const newArrivals = allProductsCache.slice(0, 4);
+            const bestSellers = allProductsCache.slice(4);
 
             renderProducts('newArrivals', newArrivals);
             renderProducts('bestSellers', bestSellers);
+
+            // Check URL for routing if refreshed
+            checkHashRouting();
         });
 
         function renderProducts(elementId, products) {
@@ -422,15 +569,25 @@
             }
 
             products.forEach(p => {
-                // CHANGED: Currency from $ to Rs.
+                // Handle multiple images (take first) or single legacy image
+                let displayImg = p.imageUrl;
+                if(p.images && p.images.length > 0) displayImg = p.images[0];
+
+                // Check Stock
+                let stockBadge = '';
+                if(p.inStock === false) { // Explicit check because undefined might mean old product = in stock
+                    stockBadge = `<div class="badge-corner">Out of Stock</div>`;
+                }
+
                 container.innerHTML += `
-                    <div class="card">
-                        <img src="${p.imageUrl}" alt="${p.name}">
+                    <div class="card" onclick="openProductSlug('${p.slug || p.id}')" style="cursor:pointer;">
+                        ${stockBadge}
+                        <img src="${displayImg}" alt="${p.name}">
                         <div class="card-body">
                             <h3>${p.name}</h3>
                             <p class="price">Rs. ${p.price}</p>
-                            <button class="btn" onclick="window.open('${p.link}', '_blank')">
-                                ${p.buttonLabel || 'Buy Now'}
+                            <button class="btn">
+                                See More
                             </button>
                         </div>
                     </div>
@@ -443,8 +600,6 @@
         onSnapshot(rQ, (snapshot) => {
             const container = document.getElementById('reviewsContainer');
             container.innerHTML = '';
-            
-            // Ensure the grid class is active for 4-in-line layout
             container.className = "grid"; 
 
             if (snapshot.empty) {
@@ -466,12 +621,164 @@
             });
         });
 
-        // --- LOGIC HELPER FUNCTIONS ---
-        // Note: slideInterval logic removed as we switched to CSS Marquee for the hero section
-        // But function kept to avoid errors if referenced elsewhere, though not used now.
-        function startSlider() {
-           // Slider logic replaced by CSS marquee.
+        // --- ROUTING & NAVIGATION ---
+        
+        window.goHome = () => {
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('productDetailView').classList.add('hidden');
+            window.scrollTo(0,0);
+            history.pushState(null, null, ' '); // Clear slug
+        };
+
+        window.openProductSlug = (slug) => {
+            const product = allProductsCache.find(p => (p.slug === slug) || (p.id === slug));
+            if(!product) return;
+
+            currentProduct = product;
+            
+            // UI Switch
+            document.getElementById('homeView').classList.add('hidden');
+            document.getElementById('productDetailView').classList.remove('hidden');
+            window.scrollTo(0,0);
+
+            // Populate Data
+            document.getElementById('pdName').innerText = product.name;
+            document.getElementById('pdPrice').innerText = 'Rs. ' + product.price;
+            document.getElementById('pdDesc').innerText = product.description || "No description available.";
+
+            // Stock
+            const stockEl = document.getElementById('pdStock');
+            if(product.inStock === false) {
+                stockEl.className = "stock-badge out-stock";
+                stockEl.innerText = "Out of Stock";
+            } else {
+                stockEl.className = "stock-badge in-stock";
+                stockEl.innerText = "In Stock";
+            }
+
+            // Images
+            const mainImg = document.getElementById('pdMainImg');
+            const thumbContainer = document.getElementById('pdThumbnails');
+            
+            let images = [];
+            if(product.images && product.images.length > 0) images = product.images;
+            else if(product.imageUrl) images = [product.imageUrl];
+
+            mainImg.src = images[0];
+            thumbContainer.innerHTML = '';
+            
+            images.forEach((img, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = img;
+                thumb.className = (index === 0) ? 'thumbnail active' : 'thumbnail';
+                thumb.onclick = () => {
+                    mainImg.src = img;
+                    document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+                    thumb.classList.add('active');
+                };
+                thumbContainer.appendChild(thumb);
+            });
+
+            // Upsell (Random 4 other products)
+            const upsell = allProductsCache.filter(p => p.id !== product.id).sort(() => 0.5 - Math.random()).slice(0, 4);
+            const upsellContainer = document.getElementById('upsellContainer');
+            upsellContainer.innerHTML = '';
+            upsell.forEach(p => {
+                let displayImg = (p.images && p.images.length > 0) ? p.images[0] : p.imageUrl;
+                upsellContainer.innerHTML += `
+                    <div class="card" onclick="openProductSlug('${p.slug || p.id}')" style="cursor:pointer;">
+                        <img src="${displayImg}" alt="${p.name}">
+                        <div class="card-body">
+                            <h3>${p.name}</h3>
+                            <p class="price">Rs. ${p.price}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        function checkHashRouting() {
+            // Simple check if url has param ?product=slug
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('product');
+            if(slug) openProductSlug(slug);
         }
+
+        // --- CART & CHECKOUT LOGIC ---
+        
+        window.openCart = () => {
+             // If currently viewing a product, show it in modal summary
+             // If on home, maybe show "Cart is empty" or last added item. 
+             // For simplicity in this request: Cart Modal is the Checkout Modal directly.
+             alert("Please click 'Buy Now' on a product to checkout.");
+        };
+
+        window.addToCartAndCheckout = () => {
+            if(!currentProduct) return;
+            if(currentProduct.inStock === false) return alert("Sorry, this item is out of stock.");
+
+            const modal = document.getElementById('cartModal');
+            const details = document.getElementById('cartItemDetails');
+            
+            details.innerHTML = `
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <img src="${(currentProduct.images && currentProduct.images.length) ? currentProduct.images[0] : currentProduct.imageUrl}" style="width:60px; height:60px; object-fit:cover; border-radius:4px;">
+                    <div>
+                        <h4 style="margin:0;">${currentProduct.name}</h4>
+                        <p style="color:var(--primary); font-weight:700; margin:5px 0;">Rs. ${currentProduct.price}</p>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        };
+
+        window.closeCart = () => {
+            document.getElementById('cartModal').classList.add('hidden');
+        };
+
+        window.submitOrder = async () => {
+            if(!currentProduct) return;
+
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const address = document.getElementById('custAddress').value;
+
+            if(!name || !phone || !address) return alert("Please fill all details");
+
+            const orderBtn = document.querySelector('#checkoutForm button[type="submit"]');
+            const originalText = orderBtn.innerText;
+            orderBtn.innerText = "Processing...";
+            orderBtn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "orders"), {
+                    customerName: name,
+                    customerPhone: phone,
+                    customerAddress: address,
+                    items: [{
+                        id: currentProduct.id,
+                        name: currentProduct.name,
+                        price: currentProduct.price,
+                        slug: currentProduct.slug || ''
+                    }],
+                    totalAmount: currentProduct.price, // Assuming qty 1 for now
+                    status: "New",
+                    paymentMethod: "COD",
+                    createdAt: Date.now()
+                });
+
+                alert("Order Placed Successfully! We will call you shortly.");
+                closeCart();
+                document.getElementById('checkoutForm').reset();
+            } catch (error) {
+                console.error("Order error", error);
+                alert("Failed to place order. Try again.");
+            } finally {
+                orderBtn.innerText = originalText;
+                orderBtn.disabled = false;
+            }
+        };
 
         window.submitReview = async () => {
             const name = document.getElementById('revName').value;
@@ -499,5 +806,3 @@
     </script>
 </body>
 </html>
-
-
