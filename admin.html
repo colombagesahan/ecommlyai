@@ -353,7 +353,7 @@
 
                 <!-- Hero Images -->
                 <div class="section-card">
-                    <label>5. Hero Images (Max 5)</label>
+                    <label>5. Hero Images (Max 10)</label>
                     <div style="display:flex; gap:10px;">
                         <input type="file" id="heroUpload" multiple>
                         <button class="btn" onclick="uploadHeroImages()">Upload New</button>
@@ -457,7 +457,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        // Storage removed as we use Firestore Base64 smart compression
 
         const firebaseConfig = {
             apiKey: "AIzaSyCRyjpnt_eClLiBLav06wRO9njaBXOWvGU",
@@ -472,7 +472,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
+        // const storage = getStorage(app); // No longer needed
 
         // --- Auth Logic ---
         const loginBtn = document.getElementById('login-btn');
@@ -642,6 +642,42 @@
             });
         }
 
+        // --- SMART IMAGE COMPRESSION UTILITY ---
+        const compressImage = (file, maxWidth, maxHeight, quality = 0.7) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convert to high-performance WebP format
+                        resolve(canvas.toDataURL('image/webp', quality)); 
+                    };
+                    img.onerror = (error) => reject(error);
+                };
+                reader.onerror = (error) => reject(error);
+            });
+        };
+
         // --- SETTINGS LOGIC (Original + Updates) ---
         window.saveGeneralSettings = async () => {
             const settingsData = {
@@ -662,11 +698,18 @@
         window.uploadAsset = async (type) => {
             const file = document.getElementById(type + 'Upload').files[0];
             if (!file) return alert("Please select a file first.");
-            const storageRef = ref(storage, `assets/${type}_${Date.now()}`); 
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            await setDoc(doc(db, "settings", "general"), { [type + 'Url']: url }, { merge: true });
-            alert(type + ' updated!');
+            
+            try {
+                // Determine sizes: Favicon should be small, Logo a bit larger
+                const maxSize = type === 'favicon' ? 128 : 300;
+                const base64Url = await compressImage(file, maxSize, maxSize, 0.8);
+                
+                await setDoc(doc(db, "settings", "general"), { [type + 'Url']: base64Url }, { merge: true });
+                alert(type + ' updated successfully!');
+            } catch (error) {
+                console.error(error);
+                alert("Error processing image.");
+            }
         };
         window.deleteAsset = async (type) => {
             if(!confirm(`Delete the ${type}?`)) return;
@@ -675,19 +718,32 @@
         window.uploadHeroImages = async () => {
             const files = document.getElementById('heroUpload').files;
             if (files.length === 0) return alert("Select images first.");
+            
+            document.querySelector("button[onclick='uploadHeroImages()']").innerText = "Uploading...";
+            
             const docSnap = await getDoc(doc(db, "settings", "general"));
             let currentImages = (docSnap.exists() && docSnap.data().heroImages) ? docSnap.data().heroImages : [];
             
-            if (currentImages.length + files.length > 5) return alert("Max 5 images total.");
+            // Limit changed to 10
+            if (currentImages.length + files.length > 10) {
+                document.querySelector("button[onclick='uploadHeroImages()']").innerText = "Upload New";
+                return alert("Max 10 images total allowed.");
+            }
 
             let newUrls = [];
             for (let i = 0; i < files.length; i++) {
-                const storageRef = ref(storage, `hero/hero_${Date.now()}_${i}`);
-                await uploadBytes(storageRef, files[i]);
-                const url = await getDownloadURL(storageRef);
-                newUrls.push(url);
+                try {
+                    // Compress Hero image to 1200x800 maximum to keep data size very low
+                    const base64Url = await compressImage(files[i], 1200, 800, 0.7);
+                    newUrls.push(base64Url);
+                } catch(e) {
+                    console.error("Error compressing hero image", e);
+                }
             }
             await setDoc(doc(db, "settings", "general"), { heroImages: [...currentImages, ...newUrls] }, { merge: true });
+            
+            document.querySelector("button[onclick='uploadHeroImages()']").innerText = "Upload New";
+            document.getElementById('heroUpload').value = '';
             alert("Hero images uploaded!");
         };
         window.deleteHeroImage = async (index) => {
@@ -721,11 +777,16 @@
             // For this implementation: If new files selected, upload them.
             
             if (files.length > 0) {
-                 if (files.length > 5) return alert("Max 5 images allowed.");
+                 if (files.length > 5) return alert("Max 5 images allowed for products.");
+                 document.getElementById('saveProductBtn').innerText = "Processing Images...";
                  for(let i=0; i<files.length; i++){
-                    const storageRef = ref(storage, `products/${Date.now()}_${i}`);
-                    await uploadBytes(storageRef, files[i]);
-                    imageUrls.push(await getDownloadURL(storageRef));
+                    try {
+                        // Compress Product image to max 800x800 WebP
+                        const base64Url = await compressImage(files[i], 800, 800, 0.75);
+                        imageUrls.push(base64Url);
+                    } catch(e) {
+                        console.error("Image compression error:", e);
+                    }
                  }
             } else if (id) {
                 // If editing and no new files, keep existing (fetch logic needed or pass in)
